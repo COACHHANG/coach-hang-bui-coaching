@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Đăng ký phiên coaching khám phá 45 phút cùng Coach Hằng Bùi.">
+  <title>Đăng ký coaching | Coach Hằng Bùi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="payment.css">
+</head>
+<body>
+  <header class="simple-header"><a href="index.html">← Coach Hằng Bùi</a><span>Leadership &amp; Executive Coach</span></header>
+  <main class="page-shell">
+    <section class="payment-card form-card">
+      <p class="eyebrow">Đăng ký phiên coaching</p>
+      <h1>Đặt phiên khám phá 45 phút</h1>
+      <div class="price-box"><span>Thanh toán toàn bộ</span><strong>499.000đ</strong><small>Online · Xác nhận thanh toán tự động</small></div>
+      <p class="lead">Chia sẻ một vài thông tin ngắn. Ở bước tiếp theo, bạn sẽ nhận được QR thanh toán đúng số tiền và mã đơn riêng.</p>
+      <form id="booking-form" novalidate>
+        <label>Họ và tên<input id="customerName" name="customerName" autocomplete="name" required></label>
+        <label>Email<input id="email" name="email" type="email" autocomplete="email" required></label>
+        <label>Số điện thoại<input id="phone" name="phone" inputmode="tel" autocomplete="tel" required></label>
+        <label>Bối cảnh hoặc câu hỏi chị/anh muốn khám phá <span>(không bắt buộc)</span><textarea id="context" name="context" rows="4" placeholder="Ví dụ: Tôi vừa nhận vai trò quản lý tại một tổ chức mới…"></textarea></label>
+        <label class="consent"><input id="consent" type="checkbox" required> <span>Tôi đồng ý để Coach Hằng Bùi sử dụng thông tin trên nhằm xử lý đăng ký và liên hệ về phiên coaching.</span></label>
+        <p id="form-error" class="form-error" role="alert" hidden></p>
+        <button id="submit-button" class="button" type="submit">Tiếp tục đến thanh toán 499.000đ</button>
+      </form>
+      <p class="small-note">Sau khi SePay xác nhận thanh toán, bạn và Coach Hằng sẽ nhận email xác nhận.</p>
+    </section>
+  </main>
+  <script>
+    const form = document.getElementById('booking-form');
+    const errorMessage = document.getElementById('form-error');
+    const submitButton = document.getElementById('submit-button');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorMessage.hidden = true;
+      if (!form.reportValidity()) return;
+      submitButton.disabled = true;
+      submitButton.textContent = 'Đang tạo mã thanh toán…';
+      try {
+        const response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerName: document.getElementById('customerName').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            context: document.getElementById('context').value,
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Không thể tạo đơn thanh toán.');
+        window.location.assign(`payment.html?token=${encodeURIComponent(result.token)}`);
+      } catch (error) {
+        errorMessage.textContent = error.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+        errorMessage.hidden = false;
+        submitButton.disabled = false;
+        submitButton.textContent = 'Tiếp tục đến thanh toán 499.000đ';
+      }
+    });
+  </script>
+</body>
+</html>
