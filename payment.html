@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Thanh toán coaching | Coach Hằng Bùi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="payment.css">
+</head>
+<body>
+  <header class="simple-header"><a href="index.html">← Coach Hằng Bùi</a><span>Thanh toán bảo mật qua SePay</span></header>
+  <main class="page-shell">
+    <section class="payment-card" aria-live="polite">
+      <p class="eyebrow">Bước 2 / 2</p>
+      <h1>Hoàn tất thanh toán</h1>
+      <p class="lead">Dùng ứng dụng ngân hàng quét mã bên dưới. Vui lòng giữ nguyên số tiền và nội dung chuyển khoản.</p>
+      <div id="loading" class="loading">Đang tải thông tin thanh toán…</div>
+      <div id="payment-content" hidden>
+        <img id="qr-image" class="qr" alt="Mã QR thanh toán 499.000đ">
+        <div class="payment-details">
+          <div><span>Số tiền</span><strong id="amount"></strong></div>
+          <div><span>Mã thanh toán</span><strong id="reference"></strong></div>
+        </div>
+        <p id="payment-status" class="pending-status"><span></span> Đang chờ SePay xác nhận thanh toán…</p>
+        <p class="small-note">Bạn không cần gửi ảnh chụp giao dịch. Trang này sẽ tự cập nhật ngay khi thanh toán được xác nhận.</p>
+      </div>
+      <div id="payment-error" class="form-error" hidden></div>
+    </section>
+  </main>
+  <script>
+    const token = new URLSearchParams(location.search).get('token');
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('payment-content');
+    const errorBox = document.getElementById('payment-error');
+    let polling;
+    const money = new Intl.NumberFormat('vi-VN');
+    async function checkStatus() {
+      if (!token) throw new Error('Không tìm thấy mã đơn thanh toán.');
+      const response = await fetch(`/api/order-status?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
+      const order = await response.json();
+      if (!response.ok) throw new Error(order.error || 'Không thể tải thông tin thanh toán.');
+      document.getElementById('qr-image').src = order.qrUrl;
+      document.getElementById('amount').textContent = `${money.format(order.amount)}đ`;
+      document.getElementById('reference').textContent = order.reference;
+      loading.hidden = true;
+      content.hidden = false;
+      if (order.status === 'paid') {
+        clearInterval(polling);
+        document.getElementById('payment-status').className = 'success-status';
+        document.getElementById('payment-status').innerHTML = '<span>✓</span> Thanh toán đã được xác nhận. Email xác nhận đã được gửi.';
+      }
+    }
+    (async () => {
+      try {
+        await checkStatus();
+        polling = setInterval(() => checkStatus().catch(() => {}), 5000);
+      } catch (error) {
+        loading.hidden = true;
+        errorBox.textContent = error.message || 'Đã có lỗi xảy ra.';
+        errorBox.hidden = false;
+      }
+    })();
+  </script>
+</body>
+</html>
